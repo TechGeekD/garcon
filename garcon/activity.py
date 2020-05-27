@@ -392,23 +392,47 @@ class Activity(swf.ActivityWorker, log.GarconLogger):
             yield ActivityInstance(self, execution_context=context)
             return
 
-        generator_values = []
+        # NOTE: Test for large data set generator
+        # generator_values = []
+        # for generator in self.generators:
+        #     generator_values.append(generator(context))
+
+        # contexts = list(itertools.product(*generator_values))
+        # self.pool_size = len(contexts)
+        # for generator_contexts in contexts:
+        #     # Each generator returns a context, merge all the contexts
+        #     # to only be one - which can be used to 1/ create the id of the
+        #     # activity and 2/ be passed as a local context.
+        #     instance_context = dict()
+        #     for current_generator_context in generator_contexts:
+        #         instance_context.update(current_generator_context.items())
+
         for generator in self.generators:
+            generator_values = []
             generator_values.append(generator(context))
+            print('generator_values')
+            print(generator_values)
+            print('generator_values')
+            contexts = list(itertools.product(*generator_values))
+            self.pool_size = len(contexts)
+            print('contexts')
+            print(contexts)
+            print('contexts')
 
-        contexts = list(itertools.product(*generator_values))
-        self.pool_size = len(contexts)
-        for generator_contexts in contexts:
-            # Each generator returns a context, merge all the contexts
-            # to only be one - which can be used to 1/ create the id of the
-            # activity and 2/ be passed as a local context.
-            instance_context = dict()
-            for current_generator_context in generator_contexts:
-                instance_context.update(current_generator_context.items())
+            for generator_contexts in contexts:
+                # Each generator returns a context, merge all the contexts
+                # to only be one - which can be used to 1/ create the id of the
+                # activity and 2/ be passed as a local context.
+                instance_context = dict()
+                for current_generator_context in reversed(generator_contexts):
+                    instance_context.update(current_generator_context.items())
 
-            yield ActivityInstance(
-                self, execution_context=context,
-                local_context=instance_context)
+                print('instance_context')
+                print(instance_context)
+                print('instance_context')
+                yield ActivityInstance(
+                    self, execution_context=context,
+                    local_context=instance_context)
 
 
 class ExternalActivity(Activity):
