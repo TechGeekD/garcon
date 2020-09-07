@@ -143,6 +143,8 @@ class DeciderWorker(log.GarconLogger):
                 decisionType='FailWorkflowExecution',
                 failWorkflowExecutionDecisionAttributes=dict(
                     reason=str(e))))
+            print('**** print(eeee) ***')
+            print(e)
             if self.on_exception:
                 self.on_exception(self, e)
             self.logger.error(e, exc_info=True)
@@ -188,6 +190,8 @@ class DeciderWorker(log.GarconLogger):
                 decisionType='FailWorkflowExecution',
                 failWorkflowExecutionDecisionAttributes=dict(
                     reason=str(e))))
+            print('**** print(eeee) 222 ***')
+            print(e)
             if self.on_exception:
                 self.on_exception(self, e)
             self.logger.error(e, exc_info=True)
@@ -228,6 +232,8 @@ class DeciderWorker(log.GarconLogger):
 
             # on_exception() can be overriden by the flow to send an alert
             # when such an exception occurs.
+            print('**** print(eeee) 333 ***')
+            print(error)
             if self.on_exception:
                 self.on_exception(self, error)
             self.logger.error(error, exc_info=True)
@@ -355,8 +361,10 @@ def schedule(
 
             activity_completed.add(False)
             schedule_context.mark_uncompleted()
-
-            if states.get_last_state() != activity.ACTIVITY_FAILED:
+            if states.get_last_state() == activity.ACTIVITY_TIMED_OUT:
+                raise Exception(
+                    'ACTIVITY_TIMED_OUT: The activity timed out.')
+            elif states.get_last_state() != activity.ACTIVITY_FAILED:
                 continue
             elif (not current.retry or
                   current.retry < activity.count_activity_failures(states)):

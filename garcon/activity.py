@@ -53,6 +53,7 @@ ACTIVITY_STANDBY = 0
 ACTIVITY_SCHEDULED = 1
 ACTIVITY_COMPLETED = 2
 ACTIVITY_FAILED = 3
+ACTIVITY_TIMED_OUT = 4
 
 DEFAULT_ACTIVITY_SCHEDULE_TO_START = 600  # 10 minutes
 
@@ -96,6 +97,12 @@ class ActivityInstance:
         self.global_context = dict(
             list(self.execution_context.items()) +
             list(self.local_context.items()))
+
+        # print('ActivityInstance local_context activity_worker')
+        # print(self.activity_worker)
+        # print(self.local_context)
+        # print(self.global_context)
+        # print('ActivityInstance local_context activity_worker')
 
     @property
     def activity_name(self):
@@ -163,7 +170,10 @@ class ActivityInstance:
             int: Schedule to close timeout.
         """
 
-        return self.schedule_to_start + self.timeout
+        _timeout = self.schedule_to_start + self.timeout
+        print('*** SCHEDULE_TO_CLOSE ***')
+        print(_timeout)
+        return _timeout
 
     @property
     def timeout(self):
@@ -319,6 +329,8 @@ class Activity(log.GarconLogger):
 
             # on_exception() can be overriden by the flow to send an alert
             # when an exception occurs.
+            print('**** print(error) ***')
+            print(error)
             if self.on_exception:
                 self.on_exception(self, error)
             self.logger.error(error, exc_info=True)
@@ -333,8 +345,11 @@ class Activity(log.GarconLogger):
                 # If the workflow has been stopped, it is not possible for the
                 # activity to be updated – it throws an exception which stops
                 # the worker immediately.
+                print('**** print(error) 2222 ***')
                 try:
                     execution.fail(str(error)[:255])
+                    print(error)
+                    print(str(error)[:255])
                     if self.on_exception:
                         self.on_exception(self, error)
                 except Exception as error2:  # noqa: E722
@@ -418,6 +433,10 @@ class Activity(log.GarconLogger):
 
         contexts = list(itertools.product(*generator_values))
         self.pool_size = len(contexts)
+
+        print('contexts')
+        print(contexts)
+        print('contexts')
         for generator_contexts in contexts:
             # Each generator returns a context, merge all the contexts
             # to only be one - which can be used to 1/ create the id of the
@@ -429,6 +448,8 @@ class Activity(log.GarconLogger):
             yield ActivityInstance(
                 self, execution_context=context,
                 local_context=instance_context)
+
+            print('yield ActivityInstance')
 
 
 class ExternalActivity(Activity):
@@ -706,7 +727,10 @@ def find_available_activities(flow, history, context):
         states = history.get(instance.activity_name, {}).get(instance.id)
 
         if states:
-            if states.get_last_state() != ACTIVITY_FAILED:
+            if states.get_last_state() == ACTIVITY_TIMED_OUT:
+                raise Exception(
+                    'ACTIVITY_TIMED_OUT: The activity timed out.')
+            elif states.get_last_state() != ACTIVITY_FAILED:
                 continue
             elif (not instance.retry or
                   instance.retry < count_activity_failures(states)):

@@ -53,6 +53,8 @@ class BaseRunner():
 
             timeout = timeout + task_timeout
 
+        print('**** BaseRunner timeout ****')
+        print(timeout)
         return timeout
 
     def heartbeat(self, context):

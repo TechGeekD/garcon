@@ -19,6 +19,7 @@ Note:
 
 import copy
 from functools import update_wrapper
+import json
 
 from garcon import param
 
@@ -34,6 +35,10 @@ def decorate(timeout=None, heartbeat=None, enable_contextify=True):
         callable: The wrapper.
     """
 
+    print('**** DECORATE ****')
+    print(timeout)
+    print(heartbeat)
+    print(enable_contextify)
     def wrapper(fn):
         if timeout:
             _decorate(fn, 'timeout', timeout)
@@ -178,6 +183,21 @@ def contextify(fn):
             kwargs.update(
                 fill_function_call(
                     fn, requirements, kwargs.get('activity'), context))
+
+            print('***** CONTEXTIFY *****')
+            print(json.dumps(context))
+            print(fn.__name__)
+
+            timeout_key = fn.__name__ + '_timeout'
+            heartbeat_key = fn.__name__ + '_heartbeat'
+
+            if timeout_key in context:
+                timeout = int(context[timeout_key])
+                decorate(timeout=timeout, enable_contextify=False)
+
+            if heartbeat_key in context:
+                heartbeat = int(context[heartbeat_key])
+                decorate(heartbeat=heartbeat, enable_contextify=False)
 
             response = fn(**kwargs)
             if not response or not namespace:

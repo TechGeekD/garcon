@@ -29,6 +29,8 @@ def activity_states_from_events(events):
     for event in events:
         event_id = event.get('eventId')
         event_type = event.get('eventType')
+        print('**** EVENT_TYPE ****')
+        print(event_type)
 
         if event_type == 'ActivityTaskScheduled':
             activity_info = event.get('activityTaskScheduledEventAttributes')
@@ -69,6 +71,23 @@ def activity_states_from_events(events):
                     activity_id,
                     activity.ActivityState(activity_id)).add_state(
                         activity.ACTIVITY_COMPLETED)
+
+            result = json.loads(activity_info.get('result') or '{}')
+            activity_events.get(
+                activity_event.get('activity_name')).get(
+                    activity_id).set_result(result)
+
+        elif event_type == 'ActivityTaskTimedOut':
+            activity_info = event.get('activityTaskTimedOutEventAttributes')
+            activity_event = event_id_info.get(
+                activity_info.get('scheduledEventId'))
+            activity_id = activity_event.get('activity_id')
+
+            activity_events.setdefault(
+                activity_event.get('activity_name'), {}).setdefault(
+                    activity_id,
+                    activity.ActivityState(activity_id)).add_state(
+                        activity.ACTIVITY_TIMED_OUT)
 
             result = json.loads(activity_info.get('result') or '{}')
             activity_events.get(
